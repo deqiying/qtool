@@ -4,14 +4,134 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- 基础信息 -->
     <groupId>com.deqiying</groupId>
     <artifactId>qtool</artifactId>
     <version>0.0.1</version>
+    <packaging>jar</packaging>
 
+    <!-- 项目介绍 -->
+    <name>qtool</name>
+    <description>
+        一个轻量化的工具包。
+        A lightweight toolkit.
+    </description>
+    <url>https://github.com/deqiying/qtool</url>
+
+    <!-- 开源协议 apache 2.0 -->
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <comments>A lightweight toolkit</comments>
+        </license>
+    </licenses>
+
+    <!-- 作者信息 -->
+    <developers>
+        <developer>
+            <name>deqiying</name>
+            <email>deqiying@gmail.com</email>
+            <url>https://github.com/deqiying</url>
+            <roles>
+                <role>Project Manager</role>
+                <role>Architect</role>
+            </roles>
+        </developer>
+    </developers>
+    <!-- 仓库信息 -->
+    <scm>
+        <tag>main</tag>
+        <connection>scm:git:git://github.com/deqiying/qtool.git</connection>
+        <developerConnection>scm:git:git@github.com:deqiying/qtool.git</developerConnection>
+        <url>https://github.com/deqiying/qtool</url>
+    </scm>
+    <!-- 中央仓库 -->
+    <distributionManagement>
+        <repository>
+            <id>deqiying</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+    </distributionManagement>
+    <!-- 一些属性 -->
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <!-- 插件 -->
+    <build>
+        <plugins>
+
+            <!--   central发布插件    -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.6.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>deqiying</publishingServerId>
+                    <tokenAuth>true</tokenAuth>
+                    <autoPublish>true</autoPublish>
+                </configuration>
+            </plugin>
+            <!--   source源码插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <goals>
+                            <!--<goal>jar</goal>-->
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--   javadoc插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.11.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--   gpg签名插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.7</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Deploy 插件配置 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>3.1.3</version>
+            </plugin>
+        </plugins>
+    </build>
 </project>
