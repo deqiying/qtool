@@ -92,4 +92,44 @@ public class StringUtils {
     public static int length(final CharSequence cs) {
         return cs == null ? 0 : cs.length();
     }
+
+    /**
+     * 获取左边指定长度的字符串
+     *
+     * @param str 字符串
+     * @param len 长度
+     * @return 左边指定长度的字符串
+     */
+    public static String left(final String str, final int len) {
+        if (str == null) {
+            return null;
+        }
+        if (len < 0) {
+            return EMPTY;
+        }
+        if (str.length() <= len) {
+            return str;
+        }
+        return str.substring(0, len);
+    }
+
+    /**
+     * 获取右边指定长度的字符串
+     *
+     * @param str 字符串
+     * @param len 长度
+     * @return 右边指定长度的字符串
+     */
+    public static String right(final String str, final int len) {
+        if (str == null) {
+            return null;
+        }
+        if (len < 0) {
+            return EMPTY;
+        }
+        if (str.length() <= len) {
+            return str;
+        }
+        return str.substring(str.length() - len);
+    }
 }
