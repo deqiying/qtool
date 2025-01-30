@@ -132,4 +132,67 @@ public class StringUtils {
         }
         return str.substring(str.length() - len);
     }
+    public static boolean isNotEmpty(final CharSequence cs) {
+        return !isEmpty(cs);
+    }
+
+    /**
+     * 截取字符串
+     *
+     * @param str 字符串
+     * @param start 开始位置
+     * @param end 结束位置
+     * @return 截取后的字符串
+     */
+    public static String substring(final String str, int start, int end) {
+        if (str == null) {
+            return null;
+        }
+
+        // handle negatives
+        if (end < 0) {
+            end = str.length() + end; // remember end is negative
+        }
+        if (start < 0) {
+            start = str.length() + start; // remember start is negative
+        }
+
+        // check length next
+        if (end > str.length()) {
+            end = str.length();
+        }
+
+        // if start is greater than end, return ""
+        if (start > end) {
+            return EMPTY;
+        }
+
+        if (start < 0) {
+            start = 0;
+        }
+        if (end < 0) {
+            end = 0;
+        }
+
+        return str.substring(start, end);
+    }
+
+    /**
+     * 截取字符串
+     *
+     * @param str 字符串
+     * @param separator 分隔符
+     * @return 截取后的字符串
+     */
+    public static String substringAfter(final String str, final int separator) {
+        if (isEmpty(str)) {
+            return str;
+        }
+        final int pos = str.indexOf(separator);
+        if (pos == INDEX_NOT_FOUND) {
+            return EMPTY;
+        }
+        return str.substring(pos + 1);
+    }
+
 }
