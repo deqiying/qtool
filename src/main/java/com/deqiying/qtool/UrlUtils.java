@@ -2,9 +2,13 @@ package com.deqiying.qtool;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.io.UnsupportedEncodingException;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public class UrlUtils {
@@ -65,21 +69,100 @@ public class UrlUtils {
     /**
      * 尝试打开一个URL链接，返回HttpURLConnection对象
      *
-     * @param url 要打开的URL
+     * @param urlStr 要打开的URL
      * @return HttpURLConnection 如果是文件或流；否则返回null
      * @throws Exception 如果URL无效或请求失败
      */
-    public static HttpURLConnection openUrlConnection(String url) throws Exception {
-        if (!isValidUrl(url)) {
-            throw new MalformedURLException("无效的URL: " + url);
-        }
-        URL urlObj = new URL(url);
-        HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
+    public static HttpURLConnection openUrlConnection(String urlStr) throws Exception {
+        URI uri = createEncodedUri(urlStr);
+        URL url = uri.toURL();
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
-        connection.setConnectTimeout(10 * 60 * 1000); // 设置连接超时时间
-        // 设置读取超时时间--不限时间
+        connection.setConnectTimeout(10 * 60 * 1000);
         connection.setReadTimeout(0);
         return connection;
     }
+
+    /**
+     * 创建一个编码后的URI对象
+     *
+     * @param urlStr 要打开的URL
+     * @return URI 编码后的URI对象
+     * @throws Exception 如果URL无效或请求失败
+     */
+    private static URI createEncodedUri(String urlStr) throws Exception {
+        Pattern urlPattern = Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
+        Matcher matcher = urlPattern.matcher(urlStr);
+        if (!matcher.find()) {
+            throw new MalformedURLException("无效的URL: " + urlStr);
+        }
+
+        String scheme = matcher.group(2);
+        if (scheme == null) {
+            throw new MalformedURLException("URL缺少协议: " + urlStr);
+        }
+
+        String authority = matcher.group(4);
+        String path = matcher.group(5);
+        String query = matcher.group(7);
+        String fragment = matcher.group(9);
+
+        String encodedPath = encodePath(path != null ? path : "");
+        String encodedQuery = encodeQuery(query);
+
+        try {
+            return new URI(scheme, authority, encodedPath, encodedQuery, fragment);
+        } catch (URISyntaxException e) {
+            throw new MalformedURLException("处理后的URL无效: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 编码URL路径和查询参数
+     *
+     * @param path 要编码的路径
+     * @return 编码后的路径
+     * @throws UnsupportedEncodingException 如果编码失败
+     */
+    private static String encodePath(String path) throws UnsupportedEncodingException {
+        if (path.isEmpty()) {
+            return path;
+        }
+        String[] segments = path.split("/", -1);
+        for (int i = 0; i < segments.length; i++) {
+            String segment = segments[i];
+            if (!segment.isEmpty()) {
+                String encodedSegment = URLEncoder.encode(segment, StandardCharsets.UTF_8.name())
+                        .replace("+", "%20");
+                segments[i] = encodedSegment;
+            }
+        }
+        return String.join("/", segments);
+    }
+
+    /**
+     * 编码URL查询参数
+     *
+     * @param query 要编码的查询参数
+     * @return 编码后的查询参数
+     */
+    private static String encodeQuery(String query) {
+        if (query == null || query.isEmpty()) {
+            return null;
+        }
+        return Arrays.stream(query.split("&"))
+                .map(param -> {
+                    String[] keyValue = param.split("=", 2);
+                    try {
+                        String encodedKey = URLEncoder.encode(keyValue[0], StandardCharsets.UTF_8.name());
+                        String encodedValue = keyValue.length > 1 ? URLEncoder.encode(keyValue[1], StandardCharsets.UTF_8.name()) : "";
+                        return encodedKey + "=" + encodedValue;
+                    } catch (UnsupportedEncodingException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .collect(Collectors.joining("&"));
+    }
+
 
 }
