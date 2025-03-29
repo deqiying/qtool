@@ -114,6 +114,33 @@ public class StringUtils {
     }
 
     /**
+     * 获取左边指定长度的字符串,不足的用指定字符填充
+     *
+     * @param str      字符串
+     * @param len      长度
+     * @param fillChar 填充字符
+     * @return 左边指定长度的字符串
+     */
+    public static String left(final String str, final int len, final char fillChar) {
+        if (str == null) {
+            return null;
+        }
+        if (len < 0) {
+            return EMPTY;
+        }
+        if (str.length() <= len) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(str);
+            while (sb.length() < len) {
+                sb.append(fillChar);
+            }
+            return sb.toString();
+
+        }
+        return str.substring(0, len);
+    }
+
+    /**
      * 获取右边指定长度的字符串
      *
      * @param str 字符串
@@ -132,6 +159,39 @@ public class StringUtils {
         }
         return str.substring(str.length() - len);
     }
+
+    /**
+     * 获取右边指定长度的字符串,不足的用指定字符填充
+     *
+     * @param str      字符串
+     * @param len      长度
+     * @param fillChar 填充字符
+     * @return 右边指定长度的字符串
+     */
+    public static String right(final String str, final int len, final char fillChar) {
+        if (str == null) {
+            return null;
+        }
+        if (len < 0) {
+            return EMPTY;
+        }
+        if (str.length() <= len) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(str);
+            while (sb.length() < len) {
+                sb.insert(0, fillChar);
+            }
+            return sb.toString();
+        }
+        return str.substring(str.length() - len);
+    }
+
+    /**
+     * 判断字符串是否不为空
+     *
+     * @param cs 字符串
+     * @return true：不为空，false：为空
+     */
     public static boolean isNotEmpty(final CharSequence cs) {
         return !isEmpty(cs);
     }
@@ -139,9 +199,9 @@ public class StringUtils {
     /**
      * 截取字符串
      *
-     * @param str 字符串
+     * @param str   字符串
      * @param start 开始位置
-     * @param end 结束位置
+     * @param end   结束位置
      * @return 截取后的字符串
      */
     public static String substring(final String str, int start, int end) {
@@ -180,7 +240,7 @@ public class StringUtils {
     /**
      * 截取字符串
      *
-     * @param str 字符串
+     * @param str       字符串
      * @param separator 分隔符
      * @return 截取后的字符串
      */
