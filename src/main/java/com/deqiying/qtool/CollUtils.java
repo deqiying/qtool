@@ -2,6 +2,7 @@ package com.deqiying.qtool;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * 集合相关工具类
@@ -68,5 +69,26 @@ public class CollUtils {
      */
     public static boolean isNotEmpty(Map<?, ?> map) {
         return !isEmpty(map);
+    }
+
+    /**
+     * 判断队列是否为空
+     *
+     * @param queue 队列
+     * @return 是否为空
+     */
+    public static boolean isNotEmpty(Queue<?> queue) {
+        return !isEmpty(queue);
+    }
+
+    /**
+     * 判断队列是否为空
+     *
+     * @param queue 队列
+     * @return 是否为空
+     */
+
+    public static boolean isEmpty(Queue<?> queue) {
+        return queue == null || queue.isEmpty();
     }
 }
