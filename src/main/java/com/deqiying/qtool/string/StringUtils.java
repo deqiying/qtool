@@ -1,5 +1,7 @@
 package com.deqiying.qtool.string;
 
+import java.util.Arrays;
+
 /**
  * 字符串工具类
  *
@@ -258,6 +260,75 @@ public class StringUtils {
             return EMPTY;
         }
         return str.substring(pos + 1);
+    }
+
+    /**
+     * 使用重复为给定长度重复的指定定界符返回填充。
+     *
+     * @param ch     重复的字符
+     * @param repeat 重复的次数
+     * @return 重复后的字符串
+     */
+    public static String repeat(final char ch, final int repeat) {
+        if (repeat <= 0) {
+            return EMPTY;
+        }
+        final char[] buf = new char[repeat];
+        Arrays.fill(buf, ch);
+        return new String(buf);
+    }
+
+    public static String rightPad(final String str, final int size, final char padChar) {
+        if (str == null) {
+            return null;
+        }
+        final int pads = size - str.length();
+        if (pads <= 0) {
+            return str; // returns original String when possible
+        }
+        if (pads > PAD_LIMIT) {
+            return rightPad(str, size, String.valueOf(padChar));
+        }
+        return str.concat(repeat(padChar, pads));
+    }
+
+    /**
+     * 右边填充
+     *
+     * @param str    字符串
+     * @param size   填充后的长度
+     * @param padStr 填充的字符串
+     * @return 填充后的字符串
+     */
+    public static String rightPad(final String str, final int size, String padStr) {
+        if (str == null) {
+            return null;
+        }
+        if (isEmpty(padStr)) {
+            padStr = SPACE;
+        }
+        final int padLen = padStr.length();
+        final int strLen = str.length();
+        final int pads = size - strLen;
+        if (pads <= 0) {
+            return str; // returns original String when possible
+        }
+        if (padLen == 1 && pads <= PAD_LIMIT) {
+            return rightPad(str, size, padStr.charAt(0));
+        }
+
+        if (pads == padLen) {
+            return str.concat(padStr);
+        }
+        if (pads < padLen) {
+            return str.concat(padStr.substring(0, pads));
+        }
+        final char[] padding = new char[pads];
+        final char[] padChars = padStr.toCharArray();
+        for (int i = 0; i < pads; i++) {
+            padding[i] = padChars[i % padLen];
+        }
+        return str.concat(new String(padding));
     }
 
 }
