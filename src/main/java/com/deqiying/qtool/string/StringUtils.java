@@ -33,6 +33,11 @@ public class StringUtils {
     private static final char SEPARATOR = '_';
 
     /**
+     * 填充长度限制
+     */
+    private static final int PAD_LIMIT = 8192;
+
+    /**
      * 未找到的索引值。
      */
     public static final int INDEX_NOT_FOUND = -1;
