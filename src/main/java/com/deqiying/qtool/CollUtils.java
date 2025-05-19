@@ -11,6 +11,7 @@ import java.util.Queue;
  * @author deqiying
  * @since 2025/2/24
  */
+@SuppressWarnings(value = {"unused"})
 public class CollUtils {
     /**
      * 判断数组是否为空
