@@ -132,6 +132,7 @@ public class StringUtils {
         }
         return str.substring(str.length() - len);
     }
+
     public static boolean isNotEmpty(final CharSequence cs) {
         return !isEmpty(cs);
     }
@@ -139,9 +140,9 @@ public class StringUtils {
     /**
      * 截取字符串
      *
-     * @param str 字符串
+     * @param str   字符串
      * @param start 开始位置
-     * @param end 结束位置
+     * @param end   结束位置
      * @return 截取后的字符串
      */
     public static String substring(final String str, int start, int end) {
@@ -180,7 +181,7 @@ public class StringUtils {
     /**
      * 截取字符串
      *
-     * @param str 字符串
+     * @param str       字符串
      * @param separator 分隔符
      * @return 截取后的字符串
      */
@@ -193,6 +194,36 @@ public class StringUtils {
             return EMPTY;
         }
         return str.substring(pos + 1);
+    }
+
+    /**
+     * 大小写反转
+     *
+     * @param str 字符串
+     * @return 反转后的字符串
+     */
+    public static String swapCase(final String str) {
+        if (isEmpty(str)) {
+            return str;
+        }
+
+        final int strLen = str.length();
+        final int[] newCodePoints = new int[strLen]; // cannot be longer than the char array
+        int outOffset = 0;
+        for (int i = 0; i < strLen; ) {
+            final int oldCodepoint = str.codePointAt(i);
+            final int newCodePoint;
+            if (Character.isUpperCase(oldCodepoint) || Character.isTitleCase(oldCodepoint)) {
+                newCodePoint = Character.toLowerCase(oldCodepoint);
+            } else if (Character.isLowerCase(oldCodepoint)) {
+                newCodePoint = Character.toUpperCase(oldCodepoint);
+            } else {
+                newCodePoint = oldCodepoint;
+            }
+            newCodePoints[outOffset++] = newCodePoint;
+            i += Character.charCount(newCodePoint);
+        }
+        return new String(newCodePoints, 0, outOffset);
     }
 
 }
