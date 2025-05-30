@@ -91,29 +91,40 @@ public class UrlUtils {
      * @throws Exception 如果URL无效或请求失败
      */
     private static URI createEncodedUri(String urlStr) throws Exception {
-        Pattern urlPattern = Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
-        Matcher matcher = urlPattern.matcher(urlStr);
-        if (!matcher.find()) {
-            throw new MalformedURLException("无效的URL: " + urlStr);
-        }
-
-        String scheme = matcher.group(2);
-        if (scheme == null) {
-            throw new MalformedURLException("URL缺少协议: " + urlStr);
-        }
-
-        String authority = matcher.group(4);
-        String path = matcher.group(5);
-        String query = matcher.group(7);
-        String fragment = matcher.group(9);
-
-        String encodedPath = encodePath(path != null ? path : "");
-        String encodedQuery = encodeQuery(query);
-
         try {
-            return new URI(scheme, authority, encodedPath, encodedQuery, fragment);
+            return new URI(encodeUrlIfNeeded(urlStr));
         } catch (URISyntaxException e) {
             throw new MalformedURLException("处理后的URL无效: " + e.getMessage());
+        }
+    }
+
+    private static String encodeUrlIfNeeded(String url) {
+        // 检查是否包含非ASCII字符或空格
+        Pattern pattern = Pattern.compile("[^\\x00-\\x7F]|\\s");
+        Matcher matcher = pattern.matcher(url);
+        if (!matcher.find()) {
+            return url; // 无需编码，直接返回原始URL
+        }
+
+        // 分割URL，保留协议和路径结构
+        try {
+            StringBuilder encodedUrl = new StringBuilder();
+            String[] parts = url.split("/", -1);
+            for (int i = 0; i < parts.length; i++) {
+                if (i == 0) {
+                    // 保留协议部分（如https:）
+                    encodedUrl.append(parts[i]);
+                } else {
+                    // 对路径部分进行编码
+                    String encodedPart = URLEncoder.encode(parts[i], StandardCharsets.UTF_8.name())
+                            .replace("+", "%20"); // 将空格编码为%20
+                    encodedUrl.append("/").append(encodedPart);
+                }
+            }
+            return encodedUrl.toString();
+        } catch (Exception e) {
+            // 如果编码失败，返回原始URL
+            return url;
         }
     }
 
