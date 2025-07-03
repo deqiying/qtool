@@ -331,4 +331,34 @@ public class StringUtils {
         return str.concat(new String(padding));
     }
 
+    /**
+     * 大小写反转
+     *
+     * @param str 字符串
+     * @return 反转后的字符串
+     */
+    public static String swapCase(final String str) {
+        if (isEmpty(str)) {
+            return str;
+        }
+
+        final int strLen = str.length();
+        final int[] newCodePoints = new int[strLen]; // cannot be longer than the char array
+        int outOffset = 0;
+        for (int i = 0; i < strLen; ) {
+            final int oldCodepoint = str.codePointAt(i);
+            final int newCodePoint;
+            if (Character.isUpperCase(oldCodepoint) || Character.isTitleCase(oldCodepoint)) {
+                newCodePoint = Character.toLowerCase(oldCodepoint);
+            } else if (Character.isLowerCase(oldCodepoint)) {
+                newCodePoint = Character.toUpperCase(oldCodepoint);
+            } else {
+                newCodePoint = oldCodepoint;
+            }
+            newCodePoints[outOffset++] = newCodePoint;
+            i += Character.charCount(newCodePoint);
+        }
+        return new String(newCodePoints, 0, outOffset);
+    }
+
 }

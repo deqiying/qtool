@@ -124,6 +124,36 @@ public class UrlUtils {
         }
     }
 
+    private static String encodeUrlIfNeeded(String url) {
+        // 检查是否包含非ASCII字符或空格
+        Pattern pattern = Pattern.compile("[^\\x00-\\x7F]|\\s");
+        Matcher matcher = pattern.matcher(url);
+        if (!matcher.find()) {
+            return url; // 无需编码，直接返回原始URL
+        }
+
+        // 分割URL，保留协议和路径结构
+        try {
+            StringBuilder encodedUrl = new StringBuilder();
+            String[] parts = url.split("/", -1);
+            for (int i = 0; i < parts.length; i++) {
+                if (i == 0) {
+                    // 保留协议部分（如https:）
+                    encodedUrl.append(parts[i]);
+                } else {
+                    // 对路径部分进行编码
+                    String encodedPart = URLEncoder.encode(parts[i], StandardCharsets.UTF_8.name())
+                            .replace("+", "%20"); // 将空格编码为%20
+                    encodedUrl.append("/").append(encodedPart);
+                }
+            }
+            return encodedUrl.toString();
+        } catch (Exception e) {
+            // 如果编码失败，返回原始URL
+            return url;
+        }
+    }
+
     /**
      * 编码URL路径
      *
