@@ -5,13 +5,13 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 public class UrlUtils {
+    // URL正则表达式模式，用于解析URL组件
+    private static final Pattern URL_PATTERN = Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
     /**
      * 判断字符串是否是一个有效的URL
      *
@@ -88,80 +88,116 @@ public class UrlUtils {
      *
      * @param urlStr 要打开的URL
      * @return URI 编码后的URI对象
-     * @throws Exception 如果URL无效或请求失败
+     * @throws MalformedURLException 如果URL格式无效
      */
-    private static URI createEncodedUri(String urlStr) throws Exception {
-        Pattern urlPattern = Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
-        Matcher matcher = urlPattern.matcher(urlStr);
-        if (!matcher.find()) {
-            throw new MalformedURLException("无效的URL: " + urlStr);
+    private static URI createEncodedUri(String urlStr) throws MalformedURLException {
+        if (urlStr == null || urlStr.trim().isEmpty()) {
+            throw new MalformedURLException("URL不能为空");
         }
-
-        String scheme = matcher.group(2);
-        if (scheme == null) {
-            throw new MalformedURLException("URL缺少协议: " + urlStr);
-        }
-
-        String authority = matcher.group(4);
-        String path = matcher.group(5);
-        String query = matcher.group(7);
-        String fragment = matcher.group(9);
-
-        String encodedPath = encodePath(path != null ? path : "");
-        String encodedQuery = encodeQuery(query);
 
         try {
+            // 使用预编译的正则表达式模式
+            Matcher matcher = URL_PATTERN.matcher(urlStr);
+            if (!matcher.find()) {
+                throw new MalformedURLException("无效的URL: " + urlStr);
+            }
+
+            String scheme = matcher.group(2);
+            if (scheme == null) {
+                throw new MalformedURLException("URL缺少协议: " + urlStr);
+            }
+
+            String authority = matcher.group(4);
+            String path = matcher.group(5);
+            String query = matcher.group(7);
+            String fragment = matcher.group(9);
+
+            // 只在需要时进行编码
+            String encodedPath = path != null && !path.isEmpty() ? encodePath(path) : "";
+            String encodedQuery = query != null && !query.isEmpty() ? encodeQuery(query) : null;
+
             return new URI(scheme, authority, encodedPath, encodedQuery, fragment);
         } catch (URISyntaxException e) {
             throw new MalformedURLException("处理后的URL无效: " + e.getMessage());
+        } catch (UnsupportedEncodingException e) {
+            throw new MalformedURLException("编码URL时出错: " + e.getMessage());
         }
     }
 
     /**
-     * 编码URL路径和查询参数
+     * 编码URL路径
      *
      * @param path 要编码的路径
      * @return 编码后的路径
      * @throws UnsupportedEncodingException 如果编码失败
      */
     private static String encodePath(String path) throws UnsupportedEncodingException {
-        if (path.isEmpty()) {
-            return path;
+        if (path == null || path.isEmpty()) {
+            return "";
         }
+
+        // 使用StringBuilder提高性能
+        StringBuilder result = new StringBuilder(path.length() * 2);
         String[] segments = path.split("/", -1);
+
         for (int i = 0; i < segments.length; i++) {
+            if (i > 0) {
+                result.append('/');
+            }
+
             String segment = segments[i];
             if (!segment.isEmpty()) {
-                String encodedSegment = URLEncoder.encode(segment, StandardCharsets.UTF_8.name())
-                        .replace("+", "%20");
-                segments[i] = encodedSegment;
+                // 使用StandardCharsets.UTF_8.name()而不是硬编码"UTF-8"
+                result.append(URLEncoder.encode(segment, StandardCharsets.UTF_8.name())
+                        .replace("+", "%20"));
             }
         }
-        return String.join("/", segments);
+
+        return result.toString();
     }
 
     /**
      * 编码URL查询参数
      *
      * @param query 要编码的查询参数
-     * @return 编码后的查询参数
+     * @return 编码后的查询参数，如果query为null或空则返回null
+     * @throws UnsupportedEncodingException 如果编码失败
      */
-    private static String encodeQuery(String query) {
+    private static String encodeQuery(String query) throws UnsupportedEncodingException {
         if (query == null || query.isEmpty()) {
             return null;
         }
-        return Arrays.stream(query.split("&"))
-                .map(param -> {
-                    String[] keyValue = param.split("=", 2);
-                    try {
-                        String encodedKey = URLEncoder.encode(keyValue[0], StandardCharsets.UTF_8.name());
-                        String encodedValue = keyValue.length > 1 ? URLEncoder.encode(keyValue[1], StandardCharsets.UTF_8.name()) : "";
-                        return encodedKey + "=" + encodedValue;
-                    } catch (UnsupportedEncodingException e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .collect(Collectors.joining("&"));
+
+        String[] params = query.split("&");
+        if (params.length == 0) {
+            return "";
+        }
+
+        // 使用StringBuilder提高性能
+        StringBuilder result = new StringBuilder(query.length() * 2);
+
+        for (int i = 0; i < params.length; i++) {
+            if (i > 0) {
+                result.append('&');
+            }
+
+            String param = params[i];
+            String[] keyValue = param.split("=", 2);
+
+            // 编码键
+            String encodedKey = URLEncoder.encode(keyValue[0], StandardCharsets.UTF_8.name());
+            result.append(encodedKey);
+
+            // 如果有值，则添加等号和编码后的值
+            if (keyValue.length > 1) {
+                result.append('=');
+                result.append(URLEncoder.encode(keyValue[1], StandardCharsets.UTF_8.name()));
+            } else {
+                result.append('=');
+            }
+        }
+
+        return result.toString();
     }
 
 
