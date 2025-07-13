@@ -1,5 +1,7 @@
 package com.deqiying.qtool;
 
+import com.deqiying.qtool.string.StringUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -12,6 +14,7 @@ import java.util.regex.Pattern;
 public class UrlUtils {
     // URL正则表达式模式，用于解析URL组件
     private static final Pattern URL_PATTERN = Pattern.compile("^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
+
     /**
      * 判断字符串是否是一个有效的URL
      *
@@ -230,5 +233,142 @@ public class UrlUtils {
         return result.toString();
     }
 
+    /**
+     * 获取短链接重定向之后的最终URL
+     *
+     * @param shortUrl 短链接URL
+     * @return 最终重定向后的URL
+     * @throws Exception 如果URL无效或请求失败
+     */
+    public static String getFinalUrl(String shortUrl) throws Exception {
+        if (StringUtils.isBlank(shortUrl)) {
+            return null;
+        }
+        RedirectResult finalUrlWithDetails = getFinalUrlWithDetails(encodeUrlIfNeeded(shortUrl));
+        return finalUrlWithDetails != null ? finalUrlWithDetails.finalUrl : null;
+    }
 
+    /**
+     * 获取短链接重定向之后的最终URL（带详细信息）
+     *
+     * @param shortUrl 短链接URL
+     * @return RedirectResult 包含最终URL和重定向信息的结果对象
+     * @throws Exception 如果URL无效或请求失败
+     */
+    public static RedirectResult getFinalUrlWithDetails(String shortUrl) throws Exception {
+        if (shortUrl == null || shortUrl.trim().isEmpty()) {
+            throw new IllegalArgumentException("URL不能为空");
+        }
+
+        RedirectResult result = new RedirectResult();
+        result.originalUrl = shortUrl;
+        result.redirectChain = new java.util.ArrayList<>();
+
+        String currentUrl = shortUrl;
+        int maxRedirects = 10;
+        int redirectCount = 0;
+
+        while (redirectCount < maxRedirects) {
+            HttpURLConnection connection = null;
+            try {
+                URI uri = createEncodedUri(currentUrl);
+                URL url = uri.toURL();
+                connection = (HttpURLConnection) url.openConnection();
+
+                connection.setRequestMethod("HEAD");
+                connection.setConnectTimeout(10 * 1000);
+                connection.setReadTimeout(10 * 1000);
+                connection.setInstanceFollowRedirects(false);
+                connection.setRequestProperty("User-Agent",
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+
+                int responseCode = connection.getResponseCode();
+
+                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
+                        responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
+                        responseCode == HttpURLConnection.HTTP_SEE_OTHER ||
+                        responseCode == 307 ||
+                        responseCode == 308) {
+
+                    String location = connection.getHeaderField("Location");
+                    if (location == null || location.trim().isEmpty()) {
+                        result.finalUrl = currentUrl;
+                        result.redirectCount = redirectCount;
+                        return result;
+                    }
+
+                    // 记录重定向信息
+                    RedirectInfo redirectInfo = new RedirectInfo();
+                    redirectInfo.fromUrl = currentUrl;
+                    redirectInfo.toUrl = location;
+                    redirectInfo.statusCode = responseCode;
+                    result.redirectChain.add(redirectInfo);
+
+                    // 处理相对URL
+                    if (location.startsWith("/")) {
+                        URI currentUri = new URI(currentUrl);
+                        location = currentUri.getScheme() + "://" + currentUri.getAuthority() + location;
+                    } else if (!location.startsWith("http://") && !location.startsWith("https://")) {
+                        URI currentUri = new URI(currentUrl);
+                        URI locationUri = currentUri.resolve(location);
+                        location = locationUri.toString();
+                    }
+
+                    currentUrl = location;
+                    redirectCount++;
+                } else if (responseCode >= 200 && responseCode < 300) {
+                    result.finalUrl = currentUrl;
+                    result.redirectCount = redirectCount;
+                    return result;
+                } else {
+                    throw new Exception("获取最终URL失败，HTTP状态码: " + responseCode);
+                }
+
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 重定向结果类
+     */
+    public static class RedirectResult {
+        public String originalUrl;
+        public String finalUrl;
+        public int redirectCount;
+        public java.util.List<RedirectInfo> redirectChain;
+
+        @Override
+        public String toString() {
+            return "RedirectResult{" +
+                    "originalUrl='" + originalUrl + '\'' +
+                    ", finalUrl='" + finalUrl + '\'' +
+                    ", redirectCount=" + redirectCount +
+                    ", redirectChain=" + redirectChain +
+                    '}';
+        }
+    }
+
+    /**
+     * 重定向信息类
+     */
+    public static class RedirectInfo {
+        public String fromUrl;
+        public String toUrl;
+        public int statusCode;
+
+        @Override
+        public String toString() {
+            return "RedirectInfo{" +
+                    "fromUrl='" + fromUrl + '\'' +
+                    ", toUrl='" + toUrl + '\'' +
+                    ", statusCode=" + statusCode +
+                    '}';
+        }
+    }
 }
