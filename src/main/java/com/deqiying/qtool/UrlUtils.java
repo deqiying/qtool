@@ -371,4 +371,254 @@ public class UrlUtils {
                     '}';
         }
     }
+    
+    /**
+     * 获取URL的协议（scheme），例如 http、https
+     *
+     * @param urlStr 原始URL字符串
+     * @return 协议字符串，无法解析时返回null
+     */
+    public static String getScheme(String urlStr) {
+        try {
+            URI uri = createEncodedUri(urlStr);
+            return uri.getScheme();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取URL的主机名（host）
+     *
+     * @param urlStr 原始URL字符串
+     * @return 主机名，无法解析时返回null
+     */
+    public static String getHost(String urlStr) {
+        try {
+            URI uri = createEncodedUri(urlStr);
+            return uri.getHost();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取URL的端口，如果未显式指定返回-1
+     *
+     * @param urlStr 原始URL字符串
+     * @return 端口号，未指定时返回-1，解析失败时返回-1
+     */
+    public static int getPort(String urlStr) {
+        try {
+            URI uri = createEncodedUri(urlStr);
+            int port = uri.getPort();
+            if (port != -1) {
+                return port;
+            }
+            // 未指定端口，按协议返回默认端口
+            String scheme = uri.getScheme();
+            if ("http".equalsIgnoreCase(scheme)) return 80;
+            if ("https".equalsIgnoreCase(scheme)) return 443;
+            return -1;
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    /**
+     * 获取URL的路径（path）
+     *
+     * @param urlStr 原始URL字符串
+     * @return 路径字符串，可能为空字符串，解析失败时返回null
+     */
+    public static String getPath(String urlStr) {
+        try {
+            URI uri = createEncodedUri(urlStr);
+            String p = uri.getPath();
+            return p == null ? "" : p;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取基础URL（不含路径、查询与片段）形如：scheme://authority
+     *
+     * @param urlStr 原始URL字符串
+     * @return 基础URL，解析失败时返回null
+     */
+    public static String getBaseUrl(String urlStr) {
+        try {
+            URI uri = createEncodedUri(urlStr);
+            if (uri.getScheme() == null || uri.getRawAuthority() == null) return null;
+            return uri.getScheme() + "://" + uri.getRawAuthority();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 解析URL的查询参数为有序Map（只保留每个key的第一个值）
+     *
+     * @param urlStr 原始URL字符串
+     * @return 参数Map，解析失败或无参数时返回空Map
+     */
+    public static java.util.Map<String, String> getQueryParams(String urlStr) {
+        java.util.Map<String, String> map = new java.util.LinkedHashMap<>();
+        try {
+            URI uri = createEncodedUri(urlStr);
+            String query = uri.getRawQuery();
+            if (query == null || query.isEmpty()) return map;
+            String[] parts = query.split("&");
+            for (String part : parts) {
+                if (part.isEmpty()) continue;
+                String[] kv = part.split("=", 2);
+                String k = URLDecoder.decode(kv[0], java.nio.charset.StandardCharsets.UTF_8.name());
+                String v = kv.length > 1 ? URLDecoder.decode(kv[1], java.nio.charset.StandardCharsets.UTF_8.name()) : "";
+                // 只保留第一个值
+                map.putIfAbsent(k, v);
+            }
+        } catch (Exception ignored) {
+        }
+        return map;
+    }
+
+    /**
+     * 获取URL中指定名称的查询参数的第一个值
+     *
+     * @param urlStr 原始URL字符串
+     * @param name   参数名
+     * @return 参数值，未找到或解析失败时返回null
+     */
+    public static String getQueryParam(String urlStr, String name) {
+        if (name == null) return null;
+        java.util.Map<String, String> params = getQueryParams(urlStr);
+        return params.get(name);
+    }
+
+    /**
+     * 在URL上新增或替换一个查询参数
+     *
+     * @param urlStr 原始URL字符串
+     * @param name   参数名
+     * @param value  参数值，为null时视为空字符串
+     * @return 新的URL字符串；解析失败时返回原始URL
+     */
+    public static String addOrReplaceQueryParam(String urlStr, String name, String value) {
+        if (StringUtils.isBlank(urlStr) || StringUtils.isBlank(name)) return urlStr;
+        try {
+            URI uri = createEncodedUri(urlStr);
+            java.util.Map<String, String> params = getQueryParams(urlStr);
+            params.put(name, value == null ? "" : value);
+            String newQuery = buildQueryString(params);
+            URI newUri = new URI(uri.getScheme(), uri.getRawAuthority(), uri.getRawPath(), newQuery, uri.getRawFragment());
+            return newUri.toASCIIString();
+        } catch (Exception e) {
+            return urlStr;
+        }
+    }
+
+    /**
+     * 从URL中移除一个查询参数
+     *
+     * @param urlStr 原始URL字符串
+     * @param name   参数名
+     * @return 移除后的URL；解析失败时返回原始URL
+     */
+    public static String removeQueryParam(String urlStr, String name) {
+        if (StringUtils.isBlank(urlStr) || StringUtils.isBlank(name)) return urlStr;
+        try {
+            URI uri = createEncodedUri(urlStr);
+            java.util.Map<String, String> params = getQueryParams(urlStr);
+            params.remove(name);
+            String newQuery = buildQueryString(params);
+            URI newUri = new URI(uri.getScheme(), uri.getRawAuthority(), uri.getRawPath(), newQuery, uri.getRawFragment());
+            return newUri.toASCIIString();
+        } catch (Exception e) {
+            return urlStr;
+        }
+    }
+
+    /**
+     * 通过各部分构建URL
+     *
+     * @param scheme   协议（必填）
+     * @param host     主机（必填）
+     * @param port     端口，小于0表示不指定
+     * @param path     路径，允许为null或不以/开头
+     * @param query    查询参数（key->value），允许为null
+     * @param fragment 片段（#后内容），允许为null
+     * @return 构建好的URL字符串，参数不合法时返回null
+     */
+    public static String buildUrl(String scheme, String host, int port, String path, java.util.Map<String, String> query, String fragment) {
+        try {
+            if (StringUtils.isBlank(scheme) || StringUtils.isBlank(host)) return null;
+            String normPath = (path == null || path.isEmpty()) ? null : (path.startsWith("/") ? path : "/" + path);
+            String authority = port > -1 ? host + ":" + port : host;
+            String queryStr = buildQueryString(query);
+            URI uri = new URI(scheme, authority, normPath, queryStr, fragment);
+            return uri.toASCIIString();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 规范化URL：
+     * 1) 解决相对路径中的".."与"."；2) 压缩多余的斜杠；3) 正确进行编码
+     *
+     * @param urlStr 原始URL
+     * @return 规范化后的URL，失败时返回原始URL
+     */
+    public static String normalizeUrl(String urlStr) {
+        if (StringUtils.isBlank(urlStr)) return urlStr;
+        try {
+            URI uri = createEncodedUri(urlStr);
+            URI normalized = new URI(uri.getScheme(), uri.getRawAuthority(), uri.normalize().getRawPath(), uri.getRawQuery(), uri.getRawFragment());
+            // 去除路径中重复的斜杠（但保留协议后的双斜杠）
+            String s = normalized.toASCIIString();
+            int idx = s.indexOf("://");
+            String head = idx > -1 ? s.substring(0, idx + 3) : "";
+            String rest = idx > -1 ? s.substring(idx + 3) : s;
+            rest = rest.replaceAll("/{2,}", "/");
+            return head + rest;
+        } catch (Exception e) {
+            return urlStr;
+        }
+    }
+
+    /**
+     * 解析相对地址，基于baseUrl得到绝对URL
+     *
+     * @param baseUrl 基础URL
+     * @param relative 相对路径或URL
+     * @return 解析后的绝对URL；失败时返回relative本身
+     */
+    public static String resolve(String baseUrl, String relative) {
+        if (StringUtils.isBlank(relative)) return relative;
+        try {
+            if (StringUtils.isBlank(baseUrl)) return createEncodedUri(relative).toASCIIString();
+            URI base = createEncodedUri(baseUrl);
+            URI rel = new URI(relative);
+            return base.resolve(rel).toASCIIString();
+        } catch (Exception e) {
+            return relative;
+        }
+    }
+
+    // 构建查询字符串（内部使用）
+    private static String buildQueryString(java.util.Map<String, String> params) throws UnsupportedEncodingException {
+        if (params == null || params.isEmpty()) return null;
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (java.util.Map.Entry<String, String> e : params.entrySet()) {
+            if (!first) sb.append('&');
+            first = false;
+            String k = URLEncoder.encode(e.getKey(), java.nio.charset.StandardCharsets.UTF_8.name());
+            String v = e.getValue() == null ? "" : URLEncoder.encode(e.getValue(), java.nio.charset.StandardCharsets.UTF_8.name());
+            sb.append(k).append('=').append(v);
+        }
+        return sb.toString();
+    }
+
 }
