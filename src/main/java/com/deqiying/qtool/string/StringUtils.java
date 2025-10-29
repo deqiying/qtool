@@ -361,7 +361,7 @@ public class StringUtils {
         return new String(newCodePoints, 0, outOffset);
     }
 
-    
+
     /**
      * 当字符串为null或仅包含空白字符时，返回默认值
      *
@@ -538,4 +538,64 @@ public class StringUtils {
         return isBlank(str) ? null : str;
     }
 
+    /**
+     * 左边填充（char 版本）
+     *
+     * @param str     原字符串
+     * @param size    目标总长度
+     * @param padChar 用于填充的字符
+     * @return 若原串为null返回null；若原串长度已不小于size则原样返回；否则在左侧使用padChar补足到size
+     */
+    public static String leftPad(final String str, final int size, final char padChar) {
+        if (str == null) {
+            return null;
+        }
+        final int pads = size - str.length();
+        if (pads <= 0) {
+            return str; // 尽可能返回原字符串
+        }
+        if (pads > PAD_LIMIT) {
+            return leftPad(str, size, String.valueOf(padChar));
+        }
+        return repeat(padChar, pads).concat(str);
+    }
+
+    /**
+     * 左边填充（String 版本）
+     *
+     * @param str    原字符串
+     * @param size   目标总长度
+     * @param padStr 用于填充的字符串（为空或null时使用单个空格）
+     * @return 若原串为null返回null；若原串长度已不小于size则原样返回；否则在左侧使用padStr循环补足到size
+     */
+    public static String leftPad(final String str, final int size, String padStr) {
+        if (str == null) {
+            return null;
+        }
+        if (isEmpty(padStr)) {
+            padStr = SPACE;
+        }
+        final int padLen = padStr.length();
+        final int strLen = str.length();
+        final int pads = size - strLen;
+        if (pads <= 0) {
+            return str; // 尽可能返回原字符串
+        }
+        if (padLen == 1 && pads <= PAD_LIMIT) {
+            return leftPad(str, size, padStr.charAt(0));
+        }
+
+        if (pads == padLen) {
+            return padStr.concat(str);
+        }
+        if (pads < padLen) {
+            return padStr.substring(0, pads).concat(str);
+        }
+        final char[] padding = new char[pads];
+        final char[] padChars = padStr.toCharArray();
+        for (int i = 0; i < pads; i++) {
+            padding[i] = padChars[i % padLen];
+        }
+        return new String(padding).concat(str);
+    }
 }
